@@ -3,7 +3,7 @@ This repo contains some experimental scripts to setup a Wireguard NAT forward ne
 
 ## Server Setup (Debian 12)
 1. `sudo apt update && sudo apt upgrade`
-2. `sudo apt install python3-netifaces python3-dnspython iptables`
+2. `sudo apt install python3-netifaces python3-dnspython iptables wireguard wireguard-tools`
 3. `git clone https://github.com/JustinTimperio/WG-NAT-Bootstrap.git`
 4. `cd WG-NAT-Bootstrap`
 5. `sudo python3 bootstrap.py`

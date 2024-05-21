@@ -137,9 +137,6 @@ def main():
         print("Provided Port does NOT seem to be a integer!")
         return
 
-    # Create the WireGuard client configuration directory
-    os.makedirs('/etc/wireguard/clients', exist_ok=True)
-
     # Get the subnet range of the network interface
     subnet_range, dns_servers, default_gateway, public_ip, interface_name = get_network_info()
 
