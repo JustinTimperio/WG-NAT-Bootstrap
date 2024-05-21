@@ -101,7 +101,7 @@ def get_network_info():
     # Get the public IP address of the server
     public_ip = requests.get('https://api.ipify.org').text
 
-    return subnet_range, dns_servers, default_gateway, public_ip
+    return subnet_range, dns_servers, default_gateway, public_ip, interface
 
 
 def main():
