@@ -30,8 +30,8 @@ def setup_wireguard_server(public_ip, listen_port, interface_name):
     # Create WireGuard configuration
     config = f"""
 [Interface]
-Address = 10.0.0.1/24 
-SaveConfig = false 
+Address = 10.0.0.1/32
+SaveConfig = false
 PrivateKey = {private_key}
 ListenPort = {listen_port}
 PreUp = sysctl -w net.ipv4.ip_forward=1
@@ -40,7 +40,7 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACC
 
 [Peer]
 PublicKey = {client_public_key}
-AllowedIPs = 10.0.0.2/32 
+AllowedIPs = 10.0.0.2/32
     """
 
     client_config = f"""
@@ -55,7 +55,7 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACC
 [Peer]
 PublicKey = {public_key}
 Endpoint = {public_ip}:{listen_port}
-AllowedIPs = 0.0.0.0/0 
+AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
     """
 
