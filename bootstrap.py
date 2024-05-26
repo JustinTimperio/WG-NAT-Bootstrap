@@ -69,10 +69,6 @@ AllowedIPs = {internal_ip}/32
 [Interface]
 Address = {internal_ip}/32
 PrivateKey = {client_private_key}
-PreUp = sysctl -w net.ipv4.ip_forward=1
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-
 
 [Peer]
 PublicKey = {public_key}
@@ -185,7 +181,6 @@ def main():
                 public_key = f.read()
 
             existing_names = []
-            pub_key_found = False
             for line in config.split('\n'):
                 if 'ListenPort' in line:
                     port = int(line.split('=')[1].strip())
