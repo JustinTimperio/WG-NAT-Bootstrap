@@ -1,9 +1,9 @@
 users:
 
-  test-user-1:
+  -
     name: "User-1"
     address: "10.0.0.2"
 
-  test-user-2:
+  -
     name: "User-2"
     address: "10.0.0.3" 

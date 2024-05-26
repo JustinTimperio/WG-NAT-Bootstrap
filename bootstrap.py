@@ -182,7 +182,7 @@ def main():
         print("Please run this script as root!")
         return
 
-    if not os.file.exists('users.yaml'):
+    if not os.path.exists('users.yaml'):
         print("Please create a users.yaml file with the names of the clients")
         return
 
@@ -211,7 +211,7 @@ def main():
         return
 
     # Get the names of the clients from the yaml file
-    with open('clients.yaml') as f:
+    with open('users.yaml') as f:
         clients = yaml.load(f, Loader=yaml.FullLoader)
     
     names = clients['users']
