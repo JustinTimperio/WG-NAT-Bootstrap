@@ -3,7 +3,9 @@ users:
   -
     name: "User-1"
     address: "10.0.0.2"
+    enabled: true
 
   -
     name: "User-2"
     address: "10.0.0.3" 
+    enabled: false
