@@ -99,7 +99,7 @@ PrivateKey = {client_private_key}
 [Peer]
 PublicKey = {public_key}
 Endpoint = {public_ip}:{listen_port}
-AllowedIPs = {subnet_range}/24 
+AllowedIPs = {subnet_range} 
 PersistentKeepalive = 25
     """
 
