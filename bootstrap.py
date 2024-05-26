@@ -18,63 +18,6 @@ def yn_frame(prompt):
         else:
             print('Please Respond With Yes/No! (`exit` or `quit` to Return)')
 
-def setup_wireguard_server(public_ip, listen_port, interface_name):
-
-    # Generate private and public keys
-    private_key = subprocess.getoutput('wg genkey')
-    public_key = subprocess.getoutput(f'echo {private_key} | wg pubkey')
-
-    # Generate client private and public keys
-    client_private_key = subprocess.getoutput('wg genkey')
-    client_public_key = subprocess.getoutput(f'echo {client_private_key} | wg pubkey')
-
-    # Create WireGuard configuration
-    config = f"""
-[Interface]
-Address = 10.0.0.1/32
-SaveConfig = false
-PrivateKey = {private_key}
-ListenPort = {listen_port}
-PreUp = sysctl -w net.ipv4.ip_forward=1
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o {interface_name} -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o {interface_name} -j MASQUERADE
-
-[Peer]
-PublicKey = {client_public_key}
-AllowedIPs = 10.0.0.2/32
-    """
-
-    client_config = f"""
-[Interface]
-Address = 10.0.0.2/32
-PrivateKey = {client_private_key}
-PreUp = sysctl -w net.ipv4.ip_forward=1
-PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-
-
-[Peer]
-PublicKey = {public_key}
-Endpoint = {public_ip}:{listen_port}
-AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
-    """
-
-    # Write the configuration to a file
-    with open('/etc/wireguard/wg0.conf', 'w') as f:
-        f.write(config)
-    
-    with open('/etc/wireguard/clients/client.conf', 'w') as f:
-        f.write(client_config)
-
-
-    # Create the Systemd service file
-    subprocess.run(['systemctl', 'enable', 'wg-quick@wg0'], check=True)
-
-    # Start the WireGuard service
-    subprocess.run(['wg-quick', 'up', 'wg0'], check=True)
-
-
 def get_network_info():
     # Get the default gateway
     gateway_info = netifaces.gateways()
