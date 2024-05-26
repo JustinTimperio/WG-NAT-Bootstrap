@@ -242,9 +242,9 @@ def main():
                         existing_names.append(line.split('=')[1].strip()[:-3])
 
                 for name in names:
-                    if name['address'] not in existing_names:
                         if name['enabled'] == True:
-                            build_wireguard_client_config(name['name'], name['address'], public_ip, port, public_key)
+                            if name['address'] not in existing_names:
+                                build_wireguard_client_config(name['name'], name['address'], public_ip, port, public_key)
                         if name['enabled'] == False:
                             remove_wireguard_client_config(name['name'], name['address'])
             
