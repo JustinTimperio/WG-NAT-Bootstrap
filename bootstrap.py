@@ -79,7 +79,7 @@ def disable_wireguard_server():
     subprocess.run(['wg-quick', 'down', 'wg0'], check=False)
 
 
-def build_wireguard_client_config(conf_name, internal_ip, public_ip, listen_port, public_key):
+def build_wireguard_client_config(subnet_range, conf_name, internal_ip, public_ip, listen_port, public_key):
 
     # Generate client private and public keys
     client_private_key = subprocess.getoutput('wg genkey')
@@ -99,7 +99,7 @@ PrivateKey = {client_private_key}
 [Peer]
 PublicKey = {public_key}
 Endpoint = {public_ip}:{listen_port}
-AllowedIPs = 0.0.0.0/0 
+AllowedIPs = {subnet_range}/24 
 PersistentKeepalive = 25
     """
 
@@ -222,7 +222,7 @@ def main():
 
             for name in names:
                 if name['enabled'] == True:
-                    build_wireguard_client_config(name['name'], name['address'], public_ip, listen_port, public_key)
+                    build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, listen_port, public_key)
             enable_wireguard_server()
             return
 
@@ -244,7 +244,7 @@ def main():
                 for name in names:
                         if name['enabled'] == True:
                             if name['address'] not in existing_names:
-                                build_wireguard_client_config(name['name'], name['address'], public_ip, port, public_key)
+                                build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, port, public_key)
                         if name['enabled'] == False:
                             remove_wireguard_client_config(name['name'], name['address'])
             
