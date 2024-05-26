@@ -213,6 +213,10 @@ def main():
             # Rebuild the server
             listen_port = ask_for_port()
             setup_wireguard_server(listen_port, interface_name)
+
+            with open('/etc/wireguard/public_key', 'r') as f:
+                public_key = f.read()
+
             for name in names:
                 if name['enabled'] == True:
                     build_wireguard_client_config(name['name'], name['address'], public_ip, listen_port, public_key)
@@ -254,6 +258,10 @@ def main():
         print("Performing Initial Configuration...")
         listen_port = ask_for_port()
         setup_wireguard_server(listen_port, interface_name)
+
+        with open('/etc/wireguard/public_key', 'r') as f:
+            public_key = f.read()
+
         for name in names:
             if name['enabled'] == True: 
                 build_wireguard_client_config(name['name'], name['address'], public_ip, listen_port, public_key)
