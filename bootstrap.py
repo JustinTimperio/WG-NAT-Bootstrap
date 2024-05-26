@@ -117,30 +117,7 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACC
     # Start the WireGuard service
     subprocess.run(['wg-quick', 'up', 'wg0'], check=True)
 
-
-def main():
-
-    # Check if the script is running as root
-    if os.geteuid() != 0:
-        print("Please run this script as root!")
-        return
-
-    if not os.path.exists('users.yaml'):
-        print("Please create a users.yaml file with the names of the clients")
-        return
-
-    # Check if WireGuard is already configured 
-    if os.path.exists('/etc/wireguard/wg0.conf'):
-        print("WireGuard is already installed and configured!")
-        if yn_frame("Do you want to reconfigure WireGuard?"):
-            # Stop the WireGuard service
-            subprocess.run(['systemctl', 'disable', 'wg-quick@wg0'], check=True)
-            subprocess.run(['wg-quick', 'down', 'wg0'], check=False)
-
-            # Remove the configuration files
-            os.remove('/etc/wireguard/wg0.conf')
-            os.removedirs('/etc/wireguard/clients')
-
+def deploy_wireguard_server(subnet_range, dns_servers, default_gateway, public_ip, interface_name):
     # Get the port to run WireGuard on
     port_answer = input('\033[1m' + "What port would you like to run Wireguard on? (default=51820): " + '\033[0m')
     try:
@@ -155,12 +132,7 @@ def main():
 
     # Get the names of the clients from the yaml file
     with open('users.yaml') as f:
-        clients = yaml.load(f, Loader=yaml.FullLoader)
-    
-    names = clients['users']
-
-    # Get the subnet range of the network interface
-    subnet_range, dns_servers, default_gateway, public_ip, interface_name = get_network_info()
+        names = yaml.load(f, Loader=yaml.FullLoader)['users']
 
     print("====================================")
     print("Gateway: ", default_gateway)
@@ -173,5 +145,64 @@ def main():
     # Setup Wireguard Server
     setup_wireguard_server(names, public_ip, port, interface_name)
 
+def main():
+
+    # Check if the script is running as root
+    if os.geteuid() != 0:
+        print("Please run this script as root!")
+        return
+
+    if not os.path.exists('users.yaml'):
+        print("Please create a users.yaml file with the names of the clients")
+        return
+
+    subnet_range, dns_servers, default_gateway, public_ip, interface_name = get_network_info()
+
+    # Check if WireGuard is already configured 
+    if os.path.exists('/etc/wireguard/wg0.conf'):
+        print("WireGuard is already installed and configured!")
+
+        if yn_frame("Do you want to reconfigure WireGuard?"):
+            # Stop the WireGuard service
+            subprocess.run(['systemctl', 'disable', 'wg-quick@wg0'], check=True)
+            subprocess.run(['wg-quick', 'down', 'wg0'], check=False)
+
+            # Remove the configuration files
+            os.remove('/etc/wireguard/wg0.conf')
+            os.removedirs('/etc/wireguard/clients')
+
+            deploy_wireguard_server(subnet_range, dns_servers, default_gateway, public_ip, interface_name)
+            return
+
+        if yn_frame("Do you want to configure new clients?"):
+            # Read the existing configuration
+            with open('/etc/wireguard/wg0.conf', 'r') as f:
+                config = f.read()
+
+            existing_names = []
+            pub_key_found = False
+            for line in config.split('\n'):
+                if 'ListenPort' in line:
+                    port = int(line.split('=')[1].strip())
+                if 'AllowedIPs' in line:
+                    existing_names.append(line.split('=')[1].strip())[:-3]
+                # Take just the first public key
+                if 'PublicKey' in line:
+                    if not pub_key_found:
+                        public_key = line.split('=')[1].strip()
+                        pub_key_found = True
+
+            names = yaml.load(open('users.yaml'), Loader=yaml.FullLoader)['users']
+            for name in names:
+                if name['address'] not in existing_names:
+                    build_wireguard_client_config(name['name'], name['address'], public_ip, port, public_key)
+            
+            subprocess.run(['wg-quick', 'down', 'wg0'], check=True)
+            subprocess.run(['wg-quick', 'up', 'wg0'], check=True)
+            return
+
+        else:
+            print("Exiting, No Changes...")
+            return
 
 main()
