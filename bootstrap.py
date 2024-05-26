@@ -107,6 +107,9 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACC
     # Write the configuration to a file
     with open('/etc/wireguard/wg0.conf', 'w') as f:
         f.write(config)
+    # Mark down the public key
+    with open('/etc/wireguard/public_key', 'w') as f:
+        f.write(public_key)
 
     for name in names:
         build_wireguard_client_config(name['name'], name['address'], public_ip, listen_port, public_key)
@@ -178,6 +181,8 @@ def main():
             # Read the existing configuration
             with open('/etc/wireguard/wg0.conf', 'r') as f:
                 config = f.read()
+            with open('/etc/wireguard/public_key', 'r') as f:
+                public_key = f.read()
 
             existing_names = []
             pub_key_found = False
@@ -185,12 +190,7 @@ def main():
                 if 'ListenPort' in line:
                     port = int(line.split('=')[1].strip())
                 if 'AllowedIPs' in line:
-                    existing_names.append(line.split('=')[1].strip())[:-3]
-                # Take just the first public key
-                if 'PublicKey' in line:
-                    if not pub_key_found:
-                        public_key = line.split('=')[1].strip()
-                        pub_key_found = True
+                    existing_names.append(line.split('=')[1].strip()[:-3])
 
             names = yaml.load(open('users.yaml'), Loader=yaml.FullLoader)['users']
             for name in names:
