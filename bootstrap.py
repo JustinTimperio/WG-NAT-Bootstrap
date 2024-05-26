@@ -210,6 +210,9 @@ def main():
             except:
                 pass
 
+            os.mkdir('/etc/wireguard/clients')
+                
+
             # Rebuild the server
             listen_port = ask_for_port()
             setup_wireguard_server(listen_port, interface_name)
@@ -257,8 +260,9 @@ def main():
     else:
         print("Performing Initial Configuration...")
         listen_port = ask_for_port()
-        setup_wireguard_server(listen_port, interface_name)
+        os.mkdir('/etc/wireguard/clients')
 
+        setup_wireguard_server(listen_port, interface_name)
         with open('/etc/wireguard/public_key', 'r') as f:
             public_key = f.read()
 
