@@ -268,7 +268,7 @@ def main():
 
         for name in names:
             if name['enabled'] == True: 
-                build_wireguard_client_config(name['name'], name['address'], public_ip, listen_port, public_key)
+                build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, listen_port, public_key)
         enable_wireguard_server()
         return
 
