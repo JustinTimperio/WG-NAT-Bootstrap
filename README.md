@@ -28,3 +28,7 @@ This repo contains some experimental scripts to setup a Wireguard NAT forward ne
         1. Open the Wireguard GUI and import the configuration file
         2. Disable the button that says "Block untunneled traffic"
         3. Click the toggle switch to activate the connection
+    3. MacOS:
+        1. Open the Wireguard GUI and import the configuration file
+        2. Disable the button that says "Block untunneled traffic"
+        3. Click the toggle switch to activate the connection

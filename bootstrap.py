@@ -184,7 +184,7 @@ def main():
         print("WireGuard is already installed and configured!")
 
         if args.reconfigure_server:
-            if yn_frame("Do you want to reconfigure WireGuard Server?"):
+            if yn_frame("Do you want to reconfigure WireGuard Server? (This will replace all existing configurations and clients)"):
 
                 disable_wireguard_server()
 
@@ -218,7 +218,7 @@ def main():
             else:
                 return
 
-        if args.reconfigure_clients:
+        elif args.reconfigure_clients:
             if yn_frame("Do you want to configure new clients?"):
                 # Read the existing configuration
                 with open('/etc/wireguard/wg0.conf', 'r') as f:
@@ -228,8 +228,6 @@ def main():
 
                 existing_names = []
                 for line in config.split('\n'):
-                    if 'ListenPort' in line:
-                        port = int(line.split('=')[1].strip())
                     if 'AllowedIPs' in line:
                         existing_names.append(line.split('=')[1].strip()[:-3])
 
@@ -246,6 +244,10 @@ def main():
                 return
             else:
                 return
+        
+        else:
+            print("No Arguments Provided, Exiting...")
+            return
 
 
     else:
@@ -259,6 +261,7 @@ def main():
         for name in names:
             if name['enabled'] == True: 
                 build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, port, public_key)
+
         enable_wireguard_server()
         return
 
