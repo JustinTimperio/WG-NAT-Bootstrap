@@ -3,6 +3,7 @@ import requests
 import os
 import shutil
 import ipaddress
+import argparse
 import netifaces
 import dns.resolver
 import yaml
@@ -49,22 +50,6 @@ def get_network_info():
     public_ip = requests.get('https://api.ipify.org').text
 
     return subnet_range, dns_servers, default_gateway, public_ip, interface
-
-
-def ask_for_port() -> int:
-    # Get the port to run WireGuard on
-    port_answer = input('\033[1m' + "What port would you like to run Wireguard on? (default=51820): " + '\033[0m')
-    try:
-        if port_answer == "":
-            print("Using default port 51820")
-            port = 51820
-        else:
-            port = int(port_answer)
-    except:
-        print("Provided Port does NOT seem to be a integer!")
-        exit("Exiting...")
-    
-    return port
 
 
 def enable_wireguard_server():
@@ -125,7 +110,6 @@ def remove_wireguard_client_config(conf_name, internal_ip):
             config = f.read()
         
         new_config = [] 
-
         for line in config.split('\n'):
             new_config.append(line)
 
@@ -139,7 +123,7 @@ def remove_wireguard_client_config(conf_name, internal_ip):
             f.write('\n'.join(new_config))
 
 
-def setup_wireguard_server(listen_port, interface_name):
+def setup_wireguard_server(listen_port, interface_name, server_address):
 
     # Generate private and public keys
     private_key = subprocess.getoutput('wg genkey')
@@ -148,7 +132,7 @@ def setup_wireguard_server(listen_port, interface_name):
     # Create WireGuard configuration
     config = f"""
 [Interface]
-Address = 10.0.0.1/32 
+Address = {server_address}/32 
 SaveConfig = false 
 PrivateKey = {private_key}
 ListenPort = {listen_port}
@@ -166,18 +150,25 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACC
 
 
 def main():
+    parser = argparse.ArgumentParser(description='WireGuard NAT Bootstrap')
+    parser.add_argument('--reconfigure-server', action='store_true', help='Reconfigure WireGuard Server')
+    parser.add_argument('--reconfigure-clients', action='store_true', help='Reconfigure Clients')
+    args = parser.parse_args()
 
     # Check if the script is running as root
     if os.geteuid() != 0:
         print("Please run this script as root!")
         return
 
-    if not os.path.exists('/opt/WG-NAT-Bootstrap/users.yaml'):
-        print("Please create a users.yaml file with the names of the clients")
+    if not os.path.exists('/opt/WG-NAT-Bootstrap/config.yaml'):
+        print("Please create a config.yaml file with the names of the clients")
         return
     else:
-        with open('/opt/WG-NAT-Bootstrap/users.yaml') as f:
-            names = yaml.load(f, Loader=yaml.FullLoader)['users']
+        with open('/opt/WG-NAT-Bootstrap/config.yaml') as f:
+            yml = yaml.load(f, Loader=yaml.FullLoader)
+            names = yml['users']
+            port = yml['port']
+            server_address = yml['server_address']
 
     subnet_range, dns_servers, default_gateway, public_ip, interface_name = get_network_info()
     print("====================================")
@@ -192,41 +183,42 @@ def main():
     if os.path.exists('/etc/wireguard/wg0.conf'):
         print("WireGuard is already installed and configured!")
 
-        if yn_frame("Do you want to reconfigure WireGuard Server?"):
+        if args.reconfigure_server:
+            if yn_frame("Do you want to reconfigure WireGuard Server?"):
 
-            disable_wireguard_server()
+                disable_wireguard_server()
 
-            # Remove the configuration files
-            try:
-                os.remove('/etc/wireguard/wg0.conf')
-            except:
-                pass
-            try:
-                os.remove('/etc/wireguard/public_key')
-            except:
-                pass
-            try:
-                shutil.rmtree('/etc/wireguard/clients')
-            except:
-                pass
+                # Remove the configuration files
+                try:
+                    os.remove('/etc/wireguard/wg0.conf')
+                except:
+                    pass
+                try:
+                    os.remove('/etc/wireguard/public_key')
+                except:
+                    pass
+                try:
+                    shutil.rmtree('/etc/wireguard/clients')
+                except:
+                    pass
 
-            os.mkdir('/etc/wireguard/clients')
-                
+                os.mkdir('/etc/wireguard/clients')
 
-            # Rebuild the server
-            listen_port = ask_for_port()
-            setup_wireguard_server(listen_port, interface_name)
+                # Rebuild the server
+                setup_wireguard_server(port, interface_name, server_address)
 
-            with open('/etc/wireguard/public_key', 'r') as f:
-                public_key = f.read()
+                with open('/etc/wireguard/public_key', 'r') as f:
+                    public_key = f.read()
 
-            for name in names:
-                if name['enabled'] == True:
-                    build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, listen_port, public_key)
-            enable_wireguard_server()
-            return
+                for name in names:
+                    if name['enabled'] == True:
+                        build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, port, public_key)
+                enable_wireguard_server()
+                return
+            else:
+                return
 
-        else:
+        if args.reconfigure_clients:
             if yn_frame("Do you want to configure new clients?"):
                 # Read the existing configuration
                 with open('/etc/wireguard/wg0.conf', 'r') as f:
@@ -247,28 +239,26 @@ def main():
                                 build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, port, public_key)
                         if name['enabled'] == False:
                             remove_wireguard_client_config(name['name'], name['address'])
-            
+
                 # Restart the WireGuard service
                 disable_wireguard_server()
                 enable_wireguard_server()
                 return
-
             else:
-                print("Exiting, No Changes...")
                 return
+
 
     else:
         print("Performing Initial Configuration...")
-        listen_port = ask_for_port()
         os.mkdir('/etc/wireguard/clients')
 
-        setup_wireguard_server(listen_port, interface_name)
+        setup_wireguard_server(port, interface_name, server_address)
         with open('/etc/wireguard/public_key', 'r') as f:
             public_key = f.read()
 
         for name in names:
             if name['enabled'] == True: 
-                build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, listen_port, public_key)
+                build_wireguard_client_config(subnet_range, name['name'], name['address'], public_ip, port, public_key)
         enable_wireguard_server()
         return
 

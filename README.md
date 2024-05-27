@@ -6,13 +6,15 @@ This repo contains some experimental scripts to setup a Wireguard NAT forward ne
     1. `sudo apt update && sudo apt upgrade`
     2. `sudo apt install python3-netifaces python3-dnspython iptables python3-yaml wireguard wireguard-tools`
     3. `cd /opt && sudo git clone https://github.com/JustinTimperio/WG-NAT-Bootstrap.git && cd WG-NAT-Bootstrap`
-    4. `sudo cp example.yaml users.yaml`
-    6. Open `users.yaml` and add your users
+    4. `sudo cp example.yaml config.yaml`
+    6. Open `config.yaml` and add your users and server information
     7. `sudo python3 bootstrap.py`
 2. Reconfiguring the server:
-    1. Add or remove users from `users.yaml`
-    2. `sudo python3 bootstrap.py`
-    3. Follow the instructions to restart the server
+    1. Change the configuration in `config.yaml`
+    2. `sudo python3 bootstrap.py --reconfigure-server`
+3. Reconfiguring the clients:
+    1. Add, Enable or Disable a user in `config.yaml`
+    2. `sudo python3 bootstrap.py --reconfigure-clients`
 
 ## Client Setup
 1. Install `wireguard` on your host system
